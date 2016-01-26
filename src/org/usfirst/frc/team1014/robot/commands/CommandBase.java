@@ -1,5 +1,7 @@
 package org.usfirst.frc.team1014.robot.commands;
 
+import java.util.HashMap;
+
 // The imports for the final subsystems
 import org.usfirst.frc.team1014.robot.OI;
 import org.usfirst.frc.team1014.robot.subsystems.DriveTrain;
@@ -11,7 +13,8 @@ public abstract class CommandBase extends Command
 {
 	public static DriveTrain driveTrain;
 	public static PixyCam pixy;
-
+	public static HashMap<String, Command> commands;
+	
 	// The subsystems on the final robot go here
 
 	public static void init()
@@ -20,7 +23,7 @@ public abstract class CommandBase extends Command
 		driveTrain = DriveTrain.getInstance();
 		//pixy = PixyCam.getInstance();
 		// camera = new AxisCamera("axis-camera.local");
-
+		
 		OI.init();
 
 		// Show what command your subsystem is running on the SmartDashboard
@@ -35,6 +38,7 @@ public abstract class CommandBase extends Command
 	public CommandBase()
 	{
 		super();
+		commands.put(getConsoleIdentity(), this);
 	}
 
 	protected abstract void initialize();
