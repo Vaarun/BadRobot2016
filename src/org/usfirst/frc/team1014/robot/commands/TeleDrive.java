@@ -58,8 +58,7 @@ public class TeleDrive extends CommandBase
 				targetGyro = driveTrain.getAngle();
 				gyroSet = true;
 			}
-			driveTrain.driveStraight(-ControlsManager.primaryXboxController.getLeftStickY(), targetGyro);
-			Logger.logThis("Correcting orientation");
+			driveTrain.driveStraight(ControlsManager.primaryXboxController.getLeftStickY(), targetGyro);
 		}
 		
 		if(ControlsManager.primaryXboxController.getLeftTrigger() < -.5)
@@ -70,8 +69,9 @@ public class TeleDrive extends CommandBase
 		}
 		else
 		{
-			driveTrain.tankDrive(-ControlsManager.primaryXboxController.getLeftStickY(),
-					-ControlsManager.primaryXboxController.getRightStickY());
+
+			driveTrain.tankDrive(ControlsManager.primaryXboxController.getRightStickY(), ControlsManager.primaryXboxController.getLeftStickY());
+
 			gyroSet = false;
 		}
 	}
@@ -95,17 +95,13 @@ public class TeleDrive extends CommandBase
 	}
 
 	/**
-<<<<<<< HEAD
-	 * Called when another command requires the same subsystem or {@code cancel()} is called.
-	 * Cleans up dependencies and logs the interrupt.
-=======
-	 * Not sure what this is used for.
->>>>>>> 8a7b4162529917dec92a80113a0bd3fcd55c5440
+	 * Called when another command requires the same subsystem or {@code cancel()} is called. Cleans
+	 * up dependencies and logs the interrupt.
 	 */
 	@Override
 	protected void interrupted()
 	{
-		org.usfirst.frc.team1014.robot.utilities.Logger.logThis(getConsoleIdentity() + " I've been interrupted!");
+		Logger.logThis(getConsoleIdentity() + " I've been interrupted!");
 		end();
 	}
 }

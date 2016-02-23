@@ -1,4 +1,5 @@
 package org.usfirst.frc.team1014.robot;
+
 import org.usfirst.frc.team1014.robot.commands.CommandBase;
 import org.usfirst.frc.team1014.robot.commands.TeleopGroup;
 import org.usfirst.frc.team1014.robot.commands.auto.FindTarget;
@@ -23,6 +24,7 @@ public class Robot extends IterativeRobot
 	public Command autonomousCommand;
 	public static SmartDashboard dashboard;
 	public static BadScheduler badScheduler = new BadScheduler(TeleopGroup.class);
+	public FindTarget visionTracking;
 
 	/**
 	 * This function is run when the robot is first started up and should be used for any
@@ -35,6 +37,7 @@ public class Robot extends IterativeRobot
 
 		CommandBase.init();
 		dashboard = new SmartDashboard();
+		visionTracking = new FindTarget();
 	}
 
 	/**
@@ -95,7 +98,7 @@ public class Robot extends IterativeRobot
 	public void teleopPeriodic()
 	{
 		dashboard.update();
-		badScheduler.changeCommand(ControlsManager.secondaryXboxController.isYButtonPressed(), new FindTarget());
+		badScheduler.changeCommand(ControlsManager.secondaryXboxController.isYButtonPressed(), visionTracking);
 		Scheduler.getInstance().run();
 	}
 
