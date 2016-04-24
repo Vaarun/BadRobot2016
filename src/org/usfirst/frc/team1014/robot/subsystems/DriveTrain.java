@@ -1,9 +1,11 @@
 package org.usfirst.frc.team1014.robot.subsystems;
 
-import org.usfirst.frc.team1014.robot.RobotMap;
+import org.usfirst.frc.team1014.robot.controls.ControlsManager;
+import org.usfirst.frc.team1014.robot.sensors.BadTalon;
+import org.usfirst.frc.team1014.robot.sensors.BadUltrasonic;
 import org.usfirst.frc.team1014.robot.sensors.IMU;
 import org.usfirst.frc.team1014.robot.sensors.LIDAR;
-import org.usfirst.frc.team1014.robot.utilities.Logger;
+import org.usfirst.frc.team1014.robot.utilities.PID;
 
 import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.RobotDrive;
@@ -22,18 +24,17 @@ import edu.wpi.first.wpilibj.Ultrasonic;
 public class DriveTrain extends BadSubsystem
 {
 	private RobotDrive train;
+
 	private static DriveTrain instance;
-	private SpeedController backLeft, frontLeft, backRight, frontRight;
-	private SpeedController ringLight;
+	public SpeedController backLeft, frontLeft, backRight, frontRight;
 	private LIDAR lidar;
 	private Ultrasonic ultrasonic;
-
+	private BadUltrasonic maxbotix;
 	private IMU mxp;
 	private SerialPort serialPort;
 
 	public DriveTrain()
 	{
-
 	}
 
 	/**
@@ -51,17 +52,22 @@ public class DriveTrain extends BadSubsystem
 	@Override
 	protected void initialize()
 	{
-		Logger.log(Logger.Level.Debug, "0001", "out message");
-		backLeft = new Talon(RobotMap.backLeftSpeedController);
-		frontLeft = new Talon(RobotMap.frontLeftSpeedController);
-		backRight = new Talon(RobotMap.backRightSpeedController);
-		frontRight = new Talon(RobotMap.frontRightSpeedController);
-		ringLight = new Talon(RobotMap.ringLight);
+		backLeft = new Talon(ControlsManager.BACK_LEFT_SPEED_CONTROLLER);
+		frontLeft = new Talon(ControlsManager.FRONT_LEFT_SPEED_CONTROLLER);
+		backRight = new Talon(ControlsManager.BACK_RIGHT_SPEED_CONTROLLER);
+		frontRight = new Talon(ControlsManager.FRONT_RIGHT_SPEED_CONTROLLER);
+
+		backLeft.setInverted(true);
+		frontLeft.setInverted(true);
+		backRight.setInverted(true);
+		frontRight.setInverted(true);
 
 		lidar = new LIDAR(Port.kMXP);
-		ultrasonic = new Ultrasonic(RobotMap.ultraPing, RobotMap.ultraEcho);
-		ultrasonic.setEnabled(true);
-		ultrasonic.setAutomaticMode(true);
+
+		// ultrasonic = new Ultrasonic(RobotMap.ultraPing, RobotMap.ultraEcho);
+		// ultrasonic.setEnabled(true); ultrasonic.setAutomaticMode(true);
+
+		maxbotix = new BadUltrasonic(ControlsManager.MAXBOTIX_ULTRASONIC);
 
 		// mxp stuff
 		serialPort = new SerialPort(57600, SerialPort.Port.kMXP);
@@ -74,44 +80,114 @@ public class DriveTrain extends BadSubsystem
 		train = new RobotDrive(backLeft, frontLeft, backRight, frontRight);
 	}
 
+	/**
+	 * Drives the robot in tank mode
+	 * 
+	 * @param leftStickY
+	 *            forward speed of left motors
+	 * @param rightStickY
+	 *            forward speed of right motors
+	 */
 	public void tankDrive(double leftStickY, double rightStickY)
 	{
 		train.tankDrive(leftStickY, rightStickY);
 	}
 
-	public void turnOnRingLight()
+	/**
+	 * This method allows the robot to go straight with just two parameters. The robot first
+	 * calculates how far off it is from the target angle, then checks if that is large enough to
+	 * act on. It then uses the proportional part of PID to calculate how fast it needs to turn to
+	 * correct its angle. Finally, it turns the robot to come back to the proper angle. If the robot
+	 * was never off in the first place, then it just drives forward at uniform speed.
+	 * 
+	 * @param moveSpeed
+	 *            - the speed at which to move if the angle is OK
+	 * @param targetGyro
+	 *            - the angle the robot wants to correct to
+	 */
+	public void driveStraight(double moveSpeed, double targetGyro)
 	{
-		ringLight.set(.1);
+		double difference180 = getAngle() - targetGyro;
+
+		double turnSpeed = 0;
+
+		if(Math.abs(difference180) > 3)
+		{
+			turnSpeed = PID.turnSpeedScale(Math.toRadians(difference180), -Math.PI, Math.PI);
+
+			if(Math.abs(turnSpeed) > 1)
+				turnSpeed = 1 * turnSpeed / Math.abs(turnSpeed);
+
+			if(Math.abs(turnSpeed) < .45)
+				turnSpeed = .45 * turnSpeed / Math.abs(turnSpeed);
+
+			// tankDrive(turnSpeed, -turnSpeed);
+			// tankDrive(moveSpeed + turnSpeed, moveSpeed - turnSpeed);
+		}
+		else
+		{
+			tankDrive(moveSpeed, moveSpeed);
+		}
 	}
 
-	public void turnOffRingLight()
+	public double getDriveEncoderDistance()
 	{
-		ringLight.set(0.0);
+		return ((BadTalon) backLeft).encoder.getDistance();
 	}
 
+	/**
+	 * Updates the lidar distance and returns it. Unit not specified.
+	 * 
+	 * @return distance
+	 */
 	public double getLIDARDistance()
 	{
 		lidar.updateDistance();
 		return lidar.getDistance();
 	}
 
+	/**
+	 * This method returns the distance to the nearest object in inches from the Maxbotix sensor.
+	 * 
+	 * @return - the distance to the nearest object in inches
+	 */
+	public double getMaxbotixDistance()
+	{
+		return maxbotix.getDistance();
+	}
+
+	/**
+	 * Returns the distance from the ultrasonic sensor. <br />
+	 * <br />
+	 * If {@code inInches} is true the distance is returned in inches. If {@code inInches} is false
+	 * the distance is returned in millimeters.
+	 * 
+	 * @param inInches
+	 * @return the distance
+	 */
 	public double getUltraDistance(boolean inInches)
 	{
 		if(inInches)
 			return ultrasonic.getRangeInches();
-		else return ultrasonic.getRangeMM();
+		return ultrasonic.getRangeMM();
 	}
 
+	/**
+	 * @return the angle of the drive train from {@literal -180} to {@literal 180}.
+	 */
 	public double getAngle()// return -180 - 180
 	{
-		return mxp.getYaw();
+		return (double) mxp.getYaw();
 	}
 
-	public double getAngle360() // returns 0 -360
+	/**
+	 * @return the angle of the drive train from {@literal 0} to {@literal 360}.
+	 */
+	public double getAngle360() // returns 0-360
 	{
 		if(mxp.getYaw() < 0)
 			return mxp.getYaw() + 360;
-		else return mxp.getYaw();
+		return mxp.getYaw();
 	}
 
 	public void resetMXPAngle()
@@ -127,7 +203,12 @@ public class DriveTrain extends BadSubsystem
 	@Override
 	public String getConsoleIdentity()
 	{
-		return "DriveTrain";
+		return "Drive_Train";
+	}
+
+	public float getRoll()
+	{
+		return mxp.getRoll();
 	}
 
 	@Override

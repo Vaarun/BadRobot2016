@@ -1,6 +1,9 @@
 package org.usfirst.frc.team1014.robot.commands;
 
-import org.usfirst.frc.team1014.robot.OI;
+import org.usfirst.frc.team1014.robot.Robot;
+import org.usfirst.frc.team1014.robot.controls.ControlsManager;
+
+import edu.wpi.first.wpilibj.command.Subsystem;
 
 /**
  * This class defines how the robot drives through teleop.
@@ -10,9 +13,14 @@ import org.usfirst.frc.team1014.robot.OI;
  */
 public class TeleDrive extends CommandBase
 {
+	public double targetGyro;
+	public boolean gyroSet;
+
 	public TeleDrive()
 	{
-		requires(driveTrain);
+		requires((Subsystem) driveTrain);
+		targetGyro = 0;
+		gyroSet = false;
 	}
 
 	/**
@@ -23,16 +31,16 @@ public class TeleDrive extends CommandBase
 	protected void initialize()
 	{
 		driveTrain.tankDrive(0, 0);
+		driveTrain.resetMXPAngle();
 	}
 
 	/**
-	 * This is really useless and doesn't really have much function, other than when we want to log
-	 * things.
+	 * @return the name of the class.
 	 */
 	@Override
 	public String getConsoleIdentity()
 	{
-		return "TeleDrive";
+		return "Tele-Drive";
 	}
 
 	/**
@@ -42,7 +50,43 @@ public class TeleDrive extends CommandBase
 	@Override
 	protected void execute()
 	{
-		driveTrain.tankDrive(-OI.priXboxController.getLeftStickY(), -OI.priXboxController.getRightStickY());
+		// Normal drive and drive straight
+		if(ControlsManager.driver.getDriveStraight_(1))
+		{
+			if(!gyroSet)
+			{
+				targetGyro = driveTrain.getAngle();
+				gyroSet = true;
+			}
+			// TODO: Change so we are not inverting
+			driveTrain.driveStraight(-ControlsManager.driver.getLeftDrive_Shooter(1), targetGyro);
+		}
+		else
+		{
+			// A, B, X, Y buttons for fine adjustments
+			if(ControlsManager.driver.getAdjustBackward_ArticulatorUp(1))
+				driveTrain.tankDrive(.6, .6);
+			else if(ControlsManager.driver.getAdjustForward_ArticulatorDown(1))
+				driveTrain.tankDrive(-.6, -.6);
+			else if(ControlsManager.driver.getAdjustLeft_Servo(1))
+				driveTrain.tankDrive(.6, -.6);
+			else if(ControlsManager.driver.getAdjustRight_AutoShoot(1))
+				driveTrain.tankDrive(-.6, .6);
+			else 
+				driveTrain.tankDrive(-ControlsManager.driver.getRightDrive_Articulator(1), -ControlsManager.driver.getLeftDrive_Shooter(1));
+
+			gyroSet = false;
+		}
+
+		// Switch between primary and secondary layouts;
+		if(ControlsManager.driver.getLayoutChange())
+			ControlsManager.changeToSecondaryLayout(1);
+		else 
+			ControlsManager.changeToPrimaryLayout(1);
+
+		if(ControlsManager.driver.getUnderVoltClear(1) || ControlsManager.driver.getUnderVoltClear(2))
+			Robot.lowVoltage = false;
+
 	}
 
 	/**
@@ -55,20 +99,11 @@ public class TeleDrive extends CommandBase
 	}
 
 	/**
-	 * What the robot should do once the command has finished executing.
+	 * Removes loose ends and exits command properly.
 	 */
 	@Override
 	protected void end()
 	{
 		driveTrain.tankDrive(0, 0);
-	}
-
-	/**
-	 * Not sure what this is used for.
-	 */
-	@Override
-	protected void interrupted()
-	{
-		org.usfirst.frc.team1014.robot.utilities.Logger.logThis(getConsoleIdentity() + " I've been interrupted!");
 	}
 }

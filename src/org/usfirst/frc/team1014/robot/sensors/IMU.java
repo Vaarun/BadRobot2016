@@ -111,10 +111,11 @@ public class IMU extends SensorBase implements PIDSource, LiveWindowSendable, Ru
 
 	protected void initIMU()
 	{
-
-		// The nav6 IMU serial port configuration is 8 data bits, no parity, one stop bit.
+		// The nav6 IMU serial port configuration is 8 data bits, no parity, one
+		// stop bit.
 		// No flow control is used.
-		// Conveniently, these are the defaults used by the WPILib's SerialPort class.
+		// Conveniently, these are the defaults used by the WPILib's SerialPort
+		// class.
 		//
 		// In addition, the WPILib's SerialPort class also defaults to:
 		//
@@ -320,13 +321,11 @@ public class IMU extends SensorBase implements PIDSource, LiveWindowSendable, Ru
 	 * 
 	 * @return The current yaw angle in degrees (-180 to 180).
 	 */
-	@Override
 	public double pidGet()
 	{
 		return getYaw();
 	}
 
-	@Override
 	public void updateTable()
 	{
 		if(m_table != null)
@@ -335,36 +334,32 @@ public class IMU extends SensorBase implements PIDSource, LiveWindowSendable, Ru
 		}
 	}
 
-	@Override
 	public void startLiveWindowMode()
 	{
 	}
 
-	@Override
 	public void stopLiveWindowMode()
 	{
 	}
 
-	@Override
 	public void initTable(ITable itable)
 	{
 		m_table = itable;
 		updateTable();
 	}
 
-	@Override
 	public ITable getTable()
 	{
 		return m_table;
 	}
 
-	@Override
 	public String getSmartDashboardType()
 	{
 		return "Gyro";
 	}
 
-	// Invoked when a new packet is received; returns the packet length if the packet
+	// Invoked when a new packet is received; returns the packet length if the
+	// packet
 	// is valid, based upon IMU Protocol definitions; otherwise, returns 0
 
 	protected int decodePacketHandler(byte[] received_data, int offset, int bytes_remaining)
@@ -380,7 +375,6 @@ public class IMU extends SensorBase implements PIDSource, LiveWindowSendable, Ru
 
 	// IMU Class thread run method
 
-	@Override
 	public void run()
 	{
 
@@ -461,7 +455,8 @@ public class IMU extends SensorBase implements PIDSource, LiveWindowSendable, Ru
 							}
 							else
 							{
-								// current index is not the start of a valid packet; increment
+								// current index is not the start of a valid
+								// packet; increment
 								i++;
 							}
 						}
@@ -469,14 +464,17 @@ public class IMU extends SensorBase implements PIDSource, LiveWindowSendable, Ru
 
 					if((packets_received == 0) && (bytes_read == 256))
 					{
-						// Workaround for issue found in Java SerialPort implementation:
+						// Workaround for issue found in Java SerialPort
+						// implementation:
 						// No packets received and 256 bytes received; this
-						// condition occurs in the Java SerialPort. In this case,
+						// condition occurs in the Java SerialPort. In this
+						// case,
 						// reset the serial port.
 						serial_port.reset();
 					}
 
-					// If a stream configuration response has not been received within three seconds
+					// If a stream configuration response has not been received
+					// within three seconds
 					// of operation, (re)send a stream configuration request
 
 					if(!stream_response_received && ((Timer.getFPGATimestamp() - last_stream_command_sent_timestamp) > 3.0))
@@ -494,8 +492,8 @@ public class IMU extends SensorBase implements PIDSource, LiveWindowSendable, Ru
 					}
 					else
 					{
-						// If no bytes remain in the buffer, and not awaiting a response, sleep a
-						// bit
+						// If no bytes remain in the buffer, and not awaiting a
+						// response, sleep a bit
 						if(stream_response_received && (serial_port.getBytesReceived() == 0))
 						{
 							Timer.delay(1.0 / update_rate_hz);
@@ -512,14 +510,14 @@ public class IMU extends SensorBase implements PIDSource, LiveWindowSendable, Ru
 	}
 
 	@Override
-	public void setPIDSourceType(PIDSourceType pidSource)
-	{
-
-	}
-
-	@Override
 	public PIDSourceType getPIDSourceType()
 	{
 		return null;
+	}
+
+	@Override
+	public void setPIDSourceType(PIDSourceType arg0)
+	{
+
 	}
 }
