@@ -27,7 +27,6 @@ public class BadScheduler
 
 	interface Method
 	{
-
 		boolean runMethod();
 	}
 
